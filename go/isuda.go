@@ -15,7 +15,7 @@ import (
 	_ "net/http/pprof"
 	"net/url"
 	"os"
-	"regexp"
+	//	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -306,7 +306,7 @@ func keywordByKeywordDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 func myhash(k string) string {
-	return strings.Join(strings.Split(k, ""), "_")
+	return strings.Join(strings.Split(k, ""), "_") + ";"
 }
 
 func htmlify(w http.ResponseWriter, r *http.Request, content string) string {
@@ -328,7 +328,7 @@ func htmlify(w http.ResponseWriter, r *http.Request, content string) string {
 
 	keywords := make([]string, 0, 500)
 	for _, entry := range entries {
-		keywords = append(keywords, regexp.QuoteMeta(entry.Keyword))
+		keywords = append(keywords, (entry.Keyword))
 	}
 	/*
 		re := regexp.MustCompile("(" + strings.Join(keywords, "|") + ")")
@@ -338,6 +338,7 @@ func htmlify(w http.ResponseWriter, r *http.Request, content string) string {
 			return kw2sha[kw]
 		})
 	*/
+
 	kw2sha := make(map[string]string)
 	for _, kw := range keywords {
 
