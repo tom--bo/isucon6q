@@ -32,6 +32,7 @@ const (
 	sessionSecret = "tonymoris"
 )
 
+/*
 type Entry struct {
 	ID          int
 	AuthorID    int
@@ -43,7 +44,7 @@ type Entry struct {
 	Html  string
 	Stars []*Star
 }
-
+*/
 var (
 	isutarEndpoint string
 	isupamEndpoint string
