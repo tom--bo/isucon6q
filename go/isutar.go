@@ -28,7 +28,8 @@ func initializeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func starsHandler(w http.ResponseWriter, r *http.Request) {
-	keyword := mux.Vars(r)["keyword"]
+	//keyword := mux.Vars(r)["keyword"]
+	keyword := r.URL.Query().Get("keyword")
 	rows, err := db.Query(`SELECT * FROM star WHERE keyword = ?`, keyword)
 	if err != nil && err != sql.ErrNoRows {
 		panicIf(err)
@@ -50,7 +51,11 @@ func starsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func starsPostHandler(w http.ResponseWriter, r *http.Request) {
-	keyword := r.URL.Query().Get("keyword")
+	//keyword := r.URL.Query().Get("keyword")
+	keyword := r.FormValue("keyword")
+	if keyword == "" {
+		keyword = r.URL.Query().Get("keyword")
+	}
 
 	origin := os.Getenv("ISUDA_ORIGIN")
 	if origin == "" {
@@ -58,6 +63,7 @@ func starsPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	u, err := r.URL.Parse(fmt.Sprintf("%s/keyword/%s", origin, pathURIEscape(keyword)))
 	panicIf(err)
+	fmt.Println(u.String())
 	resp, err := http.Get(u.String())
 	panicIf(err)
 	defer resp.Body.Close()
