@@ -334,19 +334,14 @@ func htmlifyOldwords(w http.ResponseWriter, r *http.Request, content string) str
 		SELECT id, author_id, keyword, description, updated_at, created_at FROM entry where id<=7101 ORDER BY klen DESC
 	`)
 	panicIf(err)
-	entries := make([]*Entry, 0, 500)
+	keywords := make([]string, 0, 500)
 	for rows.Next() {
 		e := Entry{}
 		err := rows.Scan(&e.ID, &e.AuthorID, &e.Keyword, &e.Description, &e.UpdatedAt, &e.CreatedAt)
 		panicIf(err)
-		entries = append(entries, &e)
+		keywords = append(keywords, (e.Keyword))
 	}
 	rows.Close()
-
-	keywords := make([]string, 0, 500)
-	for _, entry := range entries {
-		keywords = append(keywords, (entry.Keyword))
-	}
 
 	kw2sha := make(map[string]string)
 	for _, kw := range keywords {
