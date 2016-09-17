@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -34,6 +35,8 @@ const (
 var (
 	isutarEndpoint string
 	isupamEndpoint string
+	dKeyword       []string
+	newKeyword     []string
 
 	baseUrl *url.URL
 	db      *sql.DB
@@ -171,6 +174,8 @@ func keywordPostHandler(w http.ResponseWriter, r *http.Request) {
 		author_id = ?, keyword = ?, description = ?, updated_at = NOW()
 	`, userID, keyword, description, userID, keyword, description)
 	panicIf(err)
+	newKeyword = append(newKeyword, keyword)
+	sort.Sort(sort.Reverse(sort.StringSlice(newKeyword)))
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -302,6 +307,7 @@ func keywordByKeywordDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = db.Exec(`DELETE FROM entry WHERE keyword = ?`, keyword)
 	panicIf(err)
+	dKeyword = append(dKeyword, keyword)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -309,23 +315,25 @@ func htmlify(w http.ResponseWriter, r *http.Request, content string) string {
 	if content == "" {
 		return ""
 	}
-	rows, err := db.Query(`
-		SELECT * FROM entry
-	`)
-	panicIf(err)
-	entries := make([]*Entry, 0, 500)
-	for rows.Next() {
-		e := Entry{}
-		err := rows.Scan(&e.ID, &e.AuthorID, &e.Keyword, &e.Description, &e.UpdatedAt, &e.CreatedAt)
+	/*
+		rows, err := db.Query(`
+			SELECT * FROM entry
+		`)
 		panicIf(err)
-		entries = append(entries, &e)
-	}
-	rows.Close()
-
+		entries := make([]*Entry, 0, 500)
+		for rows.Next() {
+			e := Entry{}
+			err := rows.Scan(&e.ID, &e.AuthorID, &e.Keyword, &e.Description, &e.UpdatedAt, &e.CreatedAt)
+			panicIf(err)
+			entries = append(entries, &e)
+		}
+		rows.Close()
+	*/
 	keywords := make([]string, 0, 500)
-	for _, entry := range entries {
-		keywords = append(keywords, regexp.QuoteMeta(entry.Keyword))
+	for _, keystring := range newKeyword {
+		keywords = append(keywords, regexp.QuoteMeta(keystring))
 	}
+
 	re := regexp.MustCompile("(" + strings.Join(keywords, "|") + ")")
 	kw2sha := make(map[string]string)
 	content = re.ReplaceAllStringFunc(content, func(kw string) string {
