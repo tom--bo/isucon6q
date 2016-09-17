@@ -32,12 +32,25 @@ const (
 	sessionSecret = "tonymoris"
 )
 
+type Entry struct {
+	ID          int
+	AuthorID    int
+	Keyword     string
+	Description string
+	UpdatedAt   time.Time
+	CreatedAt   time.Time
+
+	Html  string
+	Stars []*Star
+}
+
 var (
 	isutarEndpoint string
 	isupamEndpoint string
 
 	baseUrl *url.URL
 	db      *sql.DB
+	db2     *sql.DB
 	re      *render.Render
 	store   *sessions.CookieStore
 
@@ -356,18 +369,20 @@ func htmlify(w http.ResponseWriter, r *http.Request, content string) string {
 }
 
 func loadStars(keyword string) []*Star {
-	v := url.Values{}
-	v.Set("keyword", keyword)
-	resp, err := http.Get(fmt.Sprintf("%s/stars", isutarEndpoint) + "?" + v.Encode())
-	panicIf(err)
-	defer resp.Body.Close()
-
-	var data struct {
-		Result []*Star `json:result`
+	rows, err := db2.Query(`SELECT * FROM star WHERE keyword = ?`, keyword)
+	if err != nil && err != sql.ErrNoRows {
+		panicIf(err)
 	}
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	panicIf(err)
-	return data.Result
+
+	stars := make([]*Star, 0, 10)
+	for rows.Next() {
+		s := Star{}
+		err := rows.Scan(&s.ID, &s.Keyword, &s.UserName, &s.CreatedAt)
+		panicIf(err)
+		stars = append(stars, &s)
+	}
+	rows.Close()
+	return stars
 }
 
 func isSpamContents(content string) bool {
@@ -433,6 +448,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to DB: %s.", err.Error())
 	}
+
+	db2, err = sql.Open("mysql", fmt.Sprintf(
+		"%s:%s@tcp(%s:%d)/%s?loc=Local&parseTime=true",
+		user, password, host, port, "isutar",
+	))
+	if err != nil {
+		log.Fatalf("Failed to connect to DB: %s.", err.Error())
+	}
+
 	db.Exec("SET SESSION sql_mode='TRADITIONAL,NO_AUTO_VALUE_ON_ZERO,ONLY_FULL_GROUP_BY'")
 	db.Exec("SET NAMES utf8mb4")
 
