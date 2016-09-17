@@ -32,6 +32,18 @@ const (
 	sessionSecret = "tonymoris"
 )
 
+type Entry struct {
+	ID          int
+	AuthorID    int
+	Keyword     string
+	Description string
+	UpdatedAt   time.Time
+	CreatedAt   time.Time
+
+	Html  string
+	Stars []*Star
+}
+
 var (
 	isutarEndpoint string
 	isupamEndpoint string
@@ -362,16 +374,15 @@ func loadStars(keyword string) []*Star {
 		panicIf(err)
 	}
 
-	s := make([]*Star, 0, 10)
-	i := 0
+	stars := make([]*Star, 0, 10)
 	for rows.Next() {
-		err := rows.Scan(&s[i].ID, &s[i].Keyword, &s[i].UserName, &s[i].CreatedAt)
+		s := Star{}
+		err := rows.Scan(&s.ID, &s.Keyword, &s.UserName, &s.CreatedAt)
 		panicIf(err)
-		i++
+		stars = append(stars, &s)
 	}
 	rows.Close()
-
-	return s
+	return stars
 }
 
 func isSpamContents(content string) bool {
