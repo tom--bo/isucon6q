@@ -304,6 +304,9 @@ func keywordByKeywordDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	panicIf(err)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
+func myhash(k string) string {
+	return strings.Join(strings.Split(k, ""), "_")
+}
 
 func htmlify(w http.ResponseWriter, r *http.Request, content string) string {
 	if content == "" {
@@ -337,9 +340,8 @@ func htmlify(w http.ResponseWriter, r *http.Request, content string) string {
 	kw2sha := make(map[string]string)
 	for _, kw := range keywords {
 
-		hash := "isuda_" + fmt.Sprintf("%x", sha1.Sum([]byte(kw)))
-		kw2sha[kw] = hash
-		content = strings.Replace(content, kw, hash, -1)
+		kw2sha[kw] = "isuda_" + fmt.Sprintf("%x", myhash((kw)))
+		content = strings.Replace(content, kw, kw2sha[kw], -1)
 	}
 	content = html.EscapeString(content)
 	for kw, hash := range kw2sha {
