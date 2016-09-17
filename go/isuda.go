@@ -89,6 +89,9 @@ func initializeHandler(w http.ResponseWriter, r *http.Request) {
 	panicIf(err)
 
 	resp, err := http.Get(fmt.Sprintf("%s/initialize", isutarEndpoint))
+	db.Exec(`SELECT id, author_id, keyword, description, updated_at, created_at FROM entry where id<=7101 ORDER BY klen DESC`)
+	db.Exec(`SELECT * FROM star limit 100`)
+	db.Exec(`SELECT id, author_id, keyword, description, updated_at, created_at FROM entry ORDER BY updated_at DESC LIMIT 10 OFFSET 0\G`)
 	panicIf(err)
 	defer resp.Body.Close()
 
