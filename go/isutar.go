@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	_ "net/http/pprof"
 	"net/url"
 	"os"
 	"strconv"
@@ -101,10 +100,6 @@ func main() {
 	if dbname == "" {
 		dbname = "isutar"
 	}
-
-	go func() {
-		log.Println(http.ListenAndServe("0.0.0.0:6061", nil))
-	}()
 
 	db, err = sql.Open("mysql", fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?loc=Local&parseTime=true",

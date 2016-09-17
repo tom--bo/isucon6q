@@ -12,7 +12,6 @@ import (
 	"log"
 	"math"
 	"net/http"
-	_ "net/http/pprof"
 	"net/url"
 	"os"
 	//	"regexp"
@@ -497,10 +496,6 @@ func main() {
 	if isupamEndpoint == "" {
 		isupamEndpoint = "http://localhost:5050"
 	}
-
-	go func() {
-		log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
-	}()
 
 	store = sessions.NewCookieStore([]byte(sessionSecret))
 
