@@ -165,13 +165,16 @@ func keywordPostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "SPAM!", http.StatusBadRequest)
 		return
 	}
+	//tenkai
+	newcont := htmlifyOldwords(w, r, description)
 	_, err := db.Exec(`
 		INSERT INTO entry (author_id, keyword, description, klen, created_at, updated_at)
 		VALUES (?, ?, ?, ?, NOW(), NOW())
 		ON DUPLICATE KEY UPDATE
 		author_id = ?, keyword = ?, description = ?, updated_at = NOW()
-	`, userID, keyword, description, utf8.RuneCountInString(keyword), userID, keyword, description)
+	`, userID, keyword, newcont, utf8.RuneCountInString(keyword), userID, keyword, newcont)
 	panicIf(err)
+
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -309,12 +312,50 @@ func myhash(k string) string {
 	return strings.Join(strings.Split(k, ""), "_") + ";"
 }
 
+func htmlifyOldwords(w http.ResponseWriter, r *http.Request, content string) string {
+	if content == "" {
+		return ""
+	}
+	rows, err := db.Query(`
+		SELECT id, author_id, keyword, description, updated_at, created_at FROM entry where id<=7101 ORDER BY klen DESC
+	`)
+	panicIf(err)
+	entries := make([]*Entry, 0, 500)
+	for rows.Next() {
+		e := Entry{}
+		err := rows.Scan(&e.ID, &e.AuthorID, &e.Keyword, &e.Description, &e.UpdatedAt, &e.CreatedAt)
+		panicIf(err)
+		entries = append(entries, &e)
+	}
+	rows.Close()
+
+	keywords := make([]string, 0, 500)
+	for _, entry := range entries {
+		keywords = append(keywords, (entry.Keyword))
+	}
+
+	kw2sha := make(map[string]string)
+	for _, kw := range keywords {
+
+		kw2sha[kw] = "isuda_" + fmt.Sprintf("%x", myhash((kw)))
+		content = strings.Replace(content, kw, kw2sha[kw], -1)
+	}
+	content = html.EscapeString(content)
+	for kw, hash := range kw2sha {
+		u, err := r.URL.Parse(baseUrl.String() + "/keyword/" + pathURIEscape(kw))
+		panicIf(err)
+		link := fmt.Sprintf("<a href=\"%s\">%s</a>", u, html.EscapeString(kw))
+		content = strings.Replace(content, hash, link, -1)
+	}
+	return strings.Replace(content, "\n", "<br />\n", -1)
+}
+
 func htmlify(w http.ResponseWriter, r *http.Request, content string) string {
 	if content == "" {
 		return ""
 	}
 	rows, err := db.Query(`
-		SELECT id, author_id, keyword, description, updated_at, created_at FROM entry ORDER BY klen DESC
+		SELECT id, author_id, keyword, description, updated_at, created_at FROM entry WHERE id>=7101 ORDER BY klen DESC
 	`)
 	panicIf(err)
 	entries := make([]*Entry, 0, 500)
