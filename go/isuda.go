@@ -310,7 +310,7 @@ func htmlify(w http.ResponseWriter, r *http.Request, content string) string {
 		return ""
 	}
 	rows, err := db.Query(`
-		SELECT * FROM entry
+		SELECT * FROM entry ORDER BY CHARACTER_LENGTH(keyword) DESC
 	`)
 	panicIf(err)
 	entries := make([]*Entry, 0, 500)
