@@ -38,6 +38,7 @@ var (
 
 	baseUrl *url.URL
 	db      *sql.DB
+	db2     *sql.DB
 	re      *render.Render
 	store   *sessions.CookieStore
 
@@ -356,18 +357,21 @@ func htmlify(w http.ResponseWriter, r *http.Request, content string) string {
 }
 
 func loadStars(keyword string) []*Star {
-	v := url.Values{}
-	v.Set("keyword", keyword)
-	resp, err := http.Get(fmt.Sprintf("%s/stars", isutarEndpoint) + "?" + v.Encode())
-	panicIf(err)
-	defer resp.Body.Close()
-
-	var data struct {
-		Result []*Star `json:result`
+	rows, err := db2.Query(`SELECT * FROM star WHERE keyword = ?`, keyword)
+	if err != nil && err != sql.ErrNoRows {
+		panicIf(err)
 	}
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	panicIf(err)
-	return data.Result
+
+	s := make([]*Star, 0, 10)
+	i := 0
+	for rows.Next() {
+		err := rows.Scan(&s[i].ID, &s[i].Keyword, &s[i].UserName, &s[i].CreatedAt)
+		panicIf(err)
+		i++
+	}
+	rows.Close()
+
+	return s
 }
 
 func isSpamContents(content string) bool {
@@ -433,6 +437,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to DB: %s.", err.Error())
 	}
+
+	db2, err = sql.Open("mysql", fmt.Sprintf(
+		"%s:%s@tcp(%s:%d)/%s?loc=Local&parseTime=true",
+		user, password, host, port, "isutar",
+	))
+	if err != nil {
+		log.Fatalf("Failed to connect to DB: %s.", err.Error())
+	}
+
 	db.Exec("SET SESSION sql_mode='TRADITIONAL,NO_AUTO_VALUE_ON_ZERO,ONLY_FULL_GROUP_BY'")
 	db.Exec("SET NAMES utf8mb4")
 
